@@ -10,8 +10,7 @@ using namespace std;
 struct Point {
 	double x[2];
 	Point() {};
-	Point(double _x, double _y) { 
-//		x = new double[2];
+	Point(double _x, double _y) {
 		x[0]=_x; x[1]=_y; 
 	}
 	bool operator<(const Point &P2) const {
@@ -57,13 +56,9 @@ struct Polygon {
 	}
 };
 
-//#define FALSE   0
-//#define TRUE    1
 #define LEFT    0
 #define RIGHT   1
 #define INTERSECTION 2
-
-//extern void  qsort(void*, unsigned, unsigned, int(*)(const void*,const void*));
 
 int xyorder(Point p1, Point p2)
 {
@@ -96,47 +91,54 @@ struct Event {
 	bool operator<(const Event &E2) const {
 		return xyorder(eV,E2.eV);
 	}
+	bool operator==(const Event &E2) const {
+		return (edge==E2.edge && type==E2.type);
+	}
 };
-
-//int E_compare(Event v1, Event v2) //Comparar dos eventos
-//{
-//	return xyorder(v1.eV, v2.eV);
-//}
 
 class EventQueue {
 	int ne;        //total number of events in array
 	int ix;        //index of next event on queue
 	set<Event> Eq; //array of all events
-	set<Event>::iterator it_q;
+//	set<Event>::iterator it_q;
 public:
 	EventQueue(Polygon P);     // constructor
-//	~EventQueue(void)           // destructor
-//	{ delete Eq; delete Edata; }
 	
 	Event next(); // next event on queue
+	int size();
 	
-	bool add(Point P,int Intnumb,list<Point> Inters) {
+	bool add(Point *P,int Intnumb,list<Point*> Inters) {
 		
-		list<Point>::iterator it = Inters.begin();
+		list<Point*>::iterator it = Inters.begin();
 		double eps = 1e-3;
 		for(it=Inters.begin();it!=Inters.end();it++) {
-			Point Pi = (*it);
-			if (mod(P-Pi)<eps)
+			Point *Pi = (*it);
+			if (mod(*P - *Pi)<eps)
 				return false; //ya esta en la lista
 		}
 		
 		Event Nuevo;
 		Nuevo.edge = Intnumb;
-		Nuevo.eV = P;
+		Nuevo.eV = *P;
 		Nuevo.type = INTERSECTION;
 		
 		//Lo inserto total set se encarga de ubicarlo
 		Eq.insert(Nuevo);
 		
-		if ((*it_q).eV.x[0] > Nuevo.eV.x[0])
-			--it_q;
+//		++it_q;
+//		if ((*it_q).eV.x[0] > Nuevo.eV.x[0])
+//			--it_q;
 		
 		return true;
+	}
+	
+	void remove(Event E) {
+		set<Event>::iterator it;
+		for(it=Eq.begin();it!=Eq.end();it++) { 
+			if (*it == E)
+				break;
+		}
+		Eq.erase(it);
 	}
 	
 	void showevents() {
@@ -154,10 +156,6 @@ EventQueue::EventQueue(Polygon P)
 {
 	ix = 0;
 	ne = 2*P.n; // 2 vertex events for each edge
-//	Edata = (Event*)new Event[ne];
-//	Eq = (Event**)new Event*[ne];
-//	for (int i=0; i < ne; i++)           // init Eq array pointers
-//		Eq[i] = &Edata[i];
 	
 	// Initialize event queue with edge segment endpoints
 	for (int i=0,j=0; i < P.n; i++, j+=2) {        // init data for edge i
@@ -165,10 +163,7 @@ EventQueue::EventQueue(Polygon P)
 		Nuevo1.edge=Nuevo2.edge=i;
 		Nuevo1.eV = P.V[j];
 		Nuevo2.eV = P.V[j+1];
-//		Eq[2*i]->edge = i;
-//		Eq[2*i+1]->edge = i;
-//		Eq[2*i]->eV   = &(P.V[j]);
-//		Eq[2*i+1]->eV = &(P.V[j+1]);
+		
 		if (xyorder(P.V[j],P.V[j+1]) > 0)  { // determine type
 			Nuevo1.type = LEFT;
 			Nuevo2.type = RIGHT;
@@ -181,22 +176,17 @@ EventQueue::EventQueue(Polygon P)
 		Eq.insert(Nuevo1);
 		Eq.insert(Nuevo2);
 	}
-	// Sort Eq[] by increasing x and y
-//	qsort(Eq, ne, sizeof(Event*), E_compare);
-	it_q = Eq.begin();
+	
+//	it_q = Eq.begin();
+}
+
+int EventQueue::size() {
+	return Eq.size();
 }
 
 Event EventQueue::next()
-{
-	Event e;
-	e.edge = -1;
-	if (it_q == Eq.end())
-		return e;
-	
-	e = (*it_q);
-	it_q++;	
-	
-	return e;
+{	
+	return *(Eq.begin());
 }
 
 //===================================================================
@@ -205,19 +195,14 @@ struct SLseg;
 
 // SweepLine segment data struct
 struct SLseg {
-	int   edge;          // polygon edge i is V[i] to V[i+1]
-	Point lP;            // leftmost vertex point
-	Point rP;            // rightmost vertex point
-	mutable int above;         // segment above this one
-	mutable int below;         // segment below this one
+	int   edge;        // polygon edge i is V[i] to V[i+1]
+	Point lP;          // leftmost vertex point
+	Point rP;          // rightmost vertex point
+	mutable double val;       // valor de la función en la posicion de la sweepline
 	
-	bool operator<(const SLseg &S2) const {
-//		if (lP.x[0]<S2.lP.x[0]) 
-//			return true;
-		/*else */if (/*(lP.x[0]==S2.lP.x[0])&&*/(lP.x[1]<S2.lP.x[1])) 
-			return true;
-		return false;
-	}
+//	bool operator < (const SLseg *S2) const {
+//		return (val < S2->val);
+//	}
 	
 	bool operator!=(const SLseg &S2) const {
 		return (edge != S2.edge);
@@ -226,54 +211,69 @@ struct SLseg {
 	bool operator==(const SLseg &S2) const {
 		return (edge == S2.edge);
 	}
+	
+	double function(double x) {
+		return ((rP.x[1]-lP.x[1])/(rP.x[0]-lP.x[0]))*(x-lP.x[0]) + lP.x[1];
+	}
 };
 
-//struct cmp
-//{
-//	bool operator()(const _SL_segment &a, const _SL_segment &b) const {
-//		return (a.edge != b.edge);
-//	}
-//};
+struct set_comparador {
+	bool operator() (const SLseg* s1, const SLseg* s2) const  { 
+		return (s1->val > s2->val);
+	}
+};
+
+#define set_iterator set<SLseg*>::iterator 
 
 // the Sweep Line itself
 class SweepLine {
 	int     nv;        // number of vertices in polygon
 	Polygon Pn;        // initial Polygon
-	set<SLseg> Tree;   // uso set a ver que onda
+	set<SLseg*,set_comparador> Tree;   // uso set
 public:
 	SweepLine(Polygon P) // constructor
 	{ nv = P.n*2; Pn = P; }
-//	~SweepLine(void)                 // destructor
-//	{ Tree.freetree();}
 	
-	SLseg add(Event);
+	set_iterator add(Event);
 	
-	SLseg find(Event);
+	set_iterator add(SLseg*,double);
 	
-	SLseg find(int);
+	set_iterator find(Event);
+	
+	set_iterator find(int);
 	
 	void swapSeg(int,int);
 	
-	Point intersect(SLseg,SLseg);
+	Point* intersect(SLseg*,SLseg*);
 	
-	void remove(SLseg);
+	bool remove(SLseg*);
+	
+	void actualizarvals(double xnew) {
+		set<SLseg*>::iterator it;
+		for(it=Tree.begin();it!=Tree.end();it++)
+			(*it)->val = (*it)->function(xnew);
+	}
+	
+	set_iterator begin() { return Tree.begin(); }
+	set_iterator end() { return Tree.end(); }
 	
 	void returnSegmentNumbers() {
-		set<SLseg>::iterator it;
+		set<SLseg*>::iterator it;
 		for(it=Tree.begin();it!=Tree.end();it++)
-			cout<<it->edge<<" "<<it->lP.x[0]<<" "<<it->lP.x[1]<<" "<<it->rP.x[0]<<" "<<it->rP.x[1]<<endl;
+			cout<<(*it)->edge<<" "<<(*it)->lP.x[0]<<" "<<(*it)->lP.x[1]<<" "<<(*it)->rP.x[0]<<" "<<(*it)->rP.x[1]<<endl;
 	};
-	void returnabovebelow() {
-		set<SLseg>::iterator it;
-		for(it=Tree.begin();it!=Tree.end();it++){
-			cout<<it->edge<<endl;
-			if (it->below != -1) 
-				cout<<"Abajo: "<<it->below<<endl;
-			if (it->above != -1) 
-				cout<<"Arriba: "<<it->above<<endl;
-			cout<<endl;
-		}
-	}
+	
+//	void returnabovebelow() {
+//		set<SLseg*>::iterator it;
+//		for(it=Tree.begin();it!=Tree.end();it++){
+//			cout<<(*it)->edge<<endl;
+//			if (it->below != -1) 
+//				cout<<"Abajo: "<<it->below<<endl;
+//			if (it->above != -1) 
+//				cout<<"Arriba: "<<it->above<<endl;
+//			cout<<endl;
+//		}
+//	}
 //	void checkintersectionforcebrute() {
 //		set<_SL_segment>::iterator it1,it2;
 //		it1 = Tree.begin();
@@ -291,208 +291,141 @@ public:
 //	}
 };
 
-void SweepLine::swapSeg(int e2,int e3) {
-	SLseg S2 = find(e2);
-	SLseg S3 = find(e3);
-	SLseg S1 = find(S2.above);
-	SLseg S4 = find(S3.below);
-	int s1=S2.above,s2=e2,s3=e3,s4=S3.below;
-	set<SLseg>::iterator it1,it2,it3,it4,it;
-	for (it=Tree.begin();it!=Tree.end();it++) {
-		if ((*it)==S1) {
-			it1=it;
-			(*it1).below=s3;
-		}
-		if ((*it)==S2) {
-			it2=it;
-			(*it2).below=s4;
-			(*it2).above=s3;
-		}
-		if ((*it)==S3) {
-			it3=it;
-			(*it3).below=s2;
-			(*it3).above=s1;
-		}
-		if ((*it)==S4) {
-			it4=it;
-			(*it4).above=s2;
-		}
-	}
+void SweepLine::swapSeg(int e1,int e2) {
+	set_iterator it1 = find(e1);
+	set_iterator it2 = find(e2);
+
+	SLseg* Saux = new SLseg;
+	Saux->edge = (*it2)->edge;
+	Saux->lP = (*it2)->lP;
+	Saux->rP = (*it2)->rP;
+	
+	(*it2)->lP = (*it1)->lP;
+	(*it2)->rP = (*it1)->rP;
+	(*it2)->edge = (*it1)->edge;
+	
+	(*it1)->lP = Saux->lP;
+	(*it1)->rP = Saux->rP;
+	(*it1)->edge = Saux->edge;
 }
 
-SLseg SweepLine::add(Event E)
+set_iterator SweepLine::add(Event E)
 {
-	SLseg s;
-	s.edge  = E.edge;
+	SLseg *s = new SLseg;
+	s->edge  = E.edge;
 	
 	// if it is being added, then it must be a LEFT edge event
 	// but need to determine which endpoint is the left one 
-	Point v1 = Pn.V[2*(s.edge)]; 
-	Point v2 = Pn.V[2*(s.edge)+1]; 
+	Point v1 = Pn.V[2*(s->edge)]; 
+	Point v2 = Pn.V[2*(s->edge)+1]; 
 	if (xyorder(v1,v2) > 0) { // determine which is leftmost
-		s.lP = v1; 
-		s.rP = v2; 
+		s->lP = v1; 
+		s->rP = v2; 
 	} 
 	else { 
-		s.rP = v1; 
-		s.lP = v2;
+		s->rP = v1; 
+		s->lP = v2;
 	}
-	s.above = -1;
-	s.below = -1;
 	
-	returnSegmentNumbers();
-	system("clear");
 	
+	s->val = s->function(E.eV.x[0]);
 	// add a node to the balanced binary tree
-	pair<set<SLseg>::iterator,bool> nd;
+	pair<set<SLseg*>::iterator,bool> nd;
 	nd = Tree.insert(s);
 	
-	returnSegmentNumbers();
-	returnabovebelow();
-//	system("clear");
 	if (nd.second) { //booleano que es true si se inserto con exito (no estaba repetido)
-		
-		set<SLseg>::iterator it1,it2;
-		set<SLseg>::iterator beg = Tree.begin();
-		set<SLseg>::iterator end = Tree.end();
-		it1=it2=nd.first;
-
-		++it2;
-		if (it1 != beg) {
-			--it1;
-			SLseg *nx = new SLseg(*it1);
-			(nd.first)->above = nx->edge;
-			it1->below = s.edge;
-		}
-		if (it2 != end) {
-			SLseg *np = new SLseg(*it2);
-			(nd.first)->below = np->edge;
-			it2->above = s.edge;
-		}
+		return nd.first;
+	} else {
+		return Tree.end();
 	}
-	
-	returnSegmentNumbers();
-	system("clear");
-	
-	return *nd.first;
 }
 
-SLseg SweepLine::find(Event E)
+set_iterator SweepLine::add(SLseg* s, double xnew)
+{	
+	s->val = s->function(xnew);
+	// add a node to the balanced binary tree
+	pair<set<SLseg*>::iterator,bool> nd;
+	nd = Tree.insert(s);
+	
+	if (nd.second) { //booleano que es true si se inserto con exito (no estaba repetido)
+		return nd.first;
+	} else {
+		return Tree.end();
+	}
+}
+
+set_iterator SweepLine::find(Event E)
 {
-	set<SLseg>::iterator it = Tree.begin();
+	set<SLseg*>::iterator it = Tree.begin();
 	
 	for (it=Tree.begin();it!=Tree.end();it++)
-		if ((*it).edge == E.edge)
-			break;
+		if ((*it)->edge == E.edge)
+			return it;
 	
-	SLseg nd = *it;
-	if (it == Tree.end())
-		return *it;
-	
-	return nd;
+	return Tree.end();
 }
 
-SLseg SweepLine::find(int edge)
+set_iterator SweepLine::find(int edge)
 {
-	SLseg nd;
-	nd.edge=-1;
-	if (edge==-1) return nd;
+	if (edge==-1) return Tree.end();
 	
-	set<SLseg>::iterator it = Tree.begin();
+	set<SLseg*>::iterator it = Tree.begin();
 	for (it=Tree.begin();it!=Tree.end();it++)
-		if ((*it).edge == edge)
-			break;
+		if ((*it)->edge == edge)
+			return it;
 	
-	nd = *it;
-	
-	if (it == Tree.end())
-		return *it;
-	
-	return nd;
+	return Tree.end();
 }
 
-void SweepLine::remove(SLseg s)
+bool SweepLine::remove(SLseg *s)
 {
 	// remove the node from the balanced binary tree
-	if (s.edge == -1) return;
+	if (s->edge == -1) return false;
 	
-	set<SLseg>::iterator nd,nx,np,beg,end;
+	set<SLseg*>::iterator nd,nx,np,beg,end;
 	beg = Tree.begin();
-	end = Tree.end();
-	SLseg ss = s;
-	returnabovebelow();
-	returnSegmentNumbers();
-	system("clear");
-	nd = Tree.find(ss);
-	nx = nd; np = nd;
-	if (nd == end)
-		return; // not there
+	nd = Tree.find(s);
 	
-	// get the above and below segments pointing to each other
-//	nx++;
-	if (nd->below != -1) {
-		SLseg S = find(nd->below);
-		set<SLseg>::iterator it;
-		for (it=Tree.begin();it!=Tree.end();it++)
-			if ((*it)==S)
-				break;
-		(*it).above = nd->above;
-	}
-	returnabovebelow();
-	returnSegmentNumbers();
-	system("clear");
-//	np--;
-	if (nd->above != -1) {
-		SLseg S = find(nd->above);
-		set<SLseg>::iterator it;
-		for (it=Tree.begin();it!=Tree.end();it++)
-			if ((*it)==S)
-				break;
-		(*it).below = nd->below;
-	}
+	if (nd == Tree.end())
+		return false; // not theTania Heffnerre
 	
-	Tree.erase(nd); //now  can safely remove it
-	returnabovebelow();
-	returnSegmentNumbers();
-	system("clear");
+	Tree.erase(nd); // remove it
+	return true;
 }
 
 double Dot(const Point& a,const Point& b) { return (a.x[0]*b.x[0]) + (a.x[1]*b.x[1]); }
 double PerpDot(const Point& a,const Point& b) { return (a.x[1]*b.x[0]) - (a.x[0]*b.x[1]); }
 
 // test intersect of 2 segments and return: 0=none, 1=intersect
-Point SweepLine::intersect(SLseg s1, SLseg s2)
+Point* SweepLine::intersect(SLseg *s1, SLseg *s2)
 {
 	Point nulo(0,0);
-	if (s1.edge == -1 || s2.edge == -1)
-		return nulo;       // no intersect if either segment doesn't exist
-	
-	// check for consecutive edges in polygon
-//	int e1 = s1.edge;
-//	int e2 = s2.edge;
+	if (s1->edge == -1 || s2->edge == -1)
+		return NULL;       // no intersect if either segment doesn't exist
 	
 	// test for existence of an intersect point
 	float lsign, rsign;
-	lsign = isLeft(s1.lP, s1.rP, s2.lP);    // s2 left point sign
-	rsign = isLeft(s1.lP, s1.rP, s2.rP);    // s2 right point sign
+	lsign = isLeft(s1->lP, s1->rP, s2->lP);    // s2 left point sign
+	rsign = isLeft(s1->lP, s1->rP, s2->rP);    // s2 right point sign
 	
 	if (lsign * rsign >= 0) // s2 endpoints have same sign  relative to s1
-		return nulo;       // => on same side => no intersect is possible
+		return NULL;       // => on same side => no intersect is possible
 	
-	lsign = isLeft(s2.lP, s2.rP, s1.lP);    //  s1 left point sign
-	rsign = isLeft(s2.lP, s2.rP, s1.rP);    //  s1 right point sign
+	lsign = isLeft(s2->lP, s2->rP, s1->lP);    //  s1 left point sign
+	rsign = isLeft(s2->lP, s2->rP, s1->rP);    //  s1 right point sign
 	
 	if (lsign * rsign >= 0) // s1 endpoints have same sign  relative to s2
-		return nulo;       // => on same side => no intersect is possible
+		return NULL;       // => on same side => no intersect is possible
 	
-	Point a = s1.rP - s1.lP;
-	Point b = s2.rP - s2.lP;
-	Point c = s2.rP - s1.rP;
+	Point a = s1->rP - s1->lP;
+	Point b = s2->rP - s2->lP;
+	Point c = s2->rP - s1->rP;
 	double aa = PerpDot(a,c);
 	double f = PerpDot(a,b);
 	double out = 1.0 - (aa / f);
-	Point intersection = ((s2.rP - s2.lP) * out) + s2.lP;
-	Point salida(intersection.x[0],intersection.x[1]);
+	Point intersection = ((s2->rP - s2->lP) * out) + s2->lP;
+	Point* salida = new Point(intersection.x[0],intersection.x[1]);
+	
 	return salida;
 }
 //===================================================================
@@ -531,9 +464,10 @@ Point SweepLine::intersect(SLseg s1, SLseg s2)
 //}
 ////===================================================================
 
-list<Point> Return_Intersections() {
+//list<Point> Return_Intersections() {
+int main() {
 	malla m;
-	m.read(_DIR "poli1.dat"); //Leo la malla de entrada
+	m.read(_DIR "segint5.dat"); //Leo la malla de entrada
 	
 	Polygon P(m);          //Construyo el poligono simple
 	EventQueue Q1(P);      //Construyo la cola de eventos //Todos los endpoints ordenados x-creciente
@@ -541,167 +475,191 @@ list<Point> Return_Intersections() {
 	
 	Event E;
 	Point nulo(0,0);
-	SLseg Seg,Seg2,SegA,SegB;
+	set_iterator Seg,Seg2,SegA,SegB;
 	bool Inserted=false;
-//	int EdgeA,EdgeB;
-//	int SSeg,SSeg2;
-	Point I;
-	list<Point> Intersections;
+	Point* I;
+	list<Point*> Intersections;
 	map<int,pair<int,int>> Map_Intersections;
 	int Intnumb=-2;
 	Q1.showevents();
 	system("clear");
-	while (true) {
+	while (Q1.size()!=0) {
 		
 		E = Q1.next();
-		if (E.edge==-1) break;
+//		if (E.edge==-1) break;
 		Q1.showevents();
 		system("clear");
 		
 		if (E.type==LEFT) {
 			
+//			S.returnSegmentNumbers();
+			S.actualizarvals(E.eV.x[0]);
 			Seg = S.add(E);     //Agrego el segmento a la SweepLine
-//			SSeg=S.find(E);
-			S.returnabovebelow();
+
+			cout<<endl;
 			S.returnSegmentNumbers();
 			system("clear");
 			
-			SegA = S.find(Seg.above);
-			I=S.intersect(Seg,SegA);
-			
-			if (I!=nulo) {
-				Inserted=Q1.add(I,Intnumb,Intersections);
+			if (Seg != S.begin()) {
+				SLseg *SegA = *(--Seg);
+				Seg++; //incremento porque decremente antes, para que quede en la posicion orginal
+				I = S.intersect(*Seg,SegA);
 				
-				if (Inserted) {
-					pair<int,int> p; 
-					p.first=Seg.edge; 
-					p.second=SegA.edge;
+				if (I) {
+					Inserted = Q1.add(I,Intnumb,Intersections);
 					
-					Map_Intersections[Intnumb]=p;
-					--Intnumb;
-					Intersections.push_back(I);
+					if (Inserted) {
+						pair<int,int> p;
+						p.first = SegA->edge;
+						p.second = (*Seg)->edge;
+						
+						Map_Intersections[Intnumb]=p;
+						--Intnumb;
+						Intersections.push_back(I);
+					}
 				}
-//				cout<<I->x<<" "<<I->y<<endl;
 			}
 			
-			SegB = S.find(Seg.below);
-			I=S.intersect(Seg,SegB);
-			
-			if (I!=nulo) {
-				Inserted=Q1.add(I,Intnumb,Intersections);
+			Seg++;
+			if (Seg != S.end()) {
+				SLseg *SegB = *Seg;
+				Seg--; //decremento porque decremente antes, para que quede en la posicion orginal
+				I = S.intersect(*Seg,SegB);
 				
-				if (Inserted) {
-					pair<int,int> p; 
-					p.first=Seg.edge; 
-					p.second=SegB.edge;
+				if (I) {
+					Inserted=Q1.add(I,Intnumb,Intersections);
 					
-					Map_Intersections[Intnumb]=p;
-					--Intnumb;
-					Intersections.push_back(I);
+					if (Inserted) {
+						pair<int,int> p;
+						p.first = (*Seg)->edge;
+						p.second = SegB->edge;
+						
+						Map_Intersections[Intnumb]=p;
+						--Intnumb;
+						Intersections.push_back(I);
+					}
 				}
-//				cout<<I->x<<" "<<I->y<<endl;
 			}
 		}
 		
 		else if (E.type==RIGHT) {
 			
 			Seg = S.find(E);
-			SegA=S.find(Seg.above);
-			SegB=S.find(Seg.below);
+			SLseg *SegA = *(--Seg);
+			++Seg;
+			SLseg *SegB = *(++Seg);
+			--Seg;
 			
-			S.returnabovebelow();
+			Seg = S.find(E);
+			S.returnSegmentNumbers();
+			bool checkintersection = Seg!=S.begin();
+			checkintersection &= (++Seg)!=S.end();
+			
+			Seg = S.find(E);
+			S.remove(*Seg);
+			
+			cout<<endl;
 			S.returnSegmentNumbers();
 			system("clear");
-			
-			S.remove(Seg);
-			
-			S.returnabovebelow();
-			S.returnSegmentNumbers();
-			system("clear");
-			
-			I=S.intersect(SegA,SegB);
-			
-			if (I!=nulo) {
-				Inserted=Q1.add(I,Intnumb,Intersections);
+			if (checkintersection) {
 				
-				if (Inserted) {
-					pair<int,int> p; 
-					p.first = SegA.edge; 
-					p.second = SegB.edge;
+				I=S.intersect(SegA,SegB);
+				
+				if (I) {
+					Inserted=Q1.add(I,Intnumb,Intersections);
 					
-					Map_Intersections[Intnumb]=p;
-					--Intnumb;
-					//				Q1.showevents();
-					Intersections.push_back(I);
+					if (Inserted) {
+						pair<int,int> p;
+						p.first = SegA->edge;
+						p.second = SegB->edge;
+						
+						Map_Intersections[Intnumb]=p;
+						--Intnumb;
+						Intersections.push_back(I);
+					}
 				}
-//				cout<<I->x<<" "<<I->y<<endl;
 			}
-//			cout<<I->x<<" "<<I->y<<endl;
 		} else { //INTERSECTION
-//			Intersections.push_back(E->eV);
-//			S.returnabovebelow();
-//			S.returnSegmentNumbers();
-//			cout<<endl;
 			
 			pair<int,int> p = Map_Intersections[E.edge];
 			
-			S.returnabovebelow();
-			S.returnSegmentNumbers();
-			system("clear");
+//			S.returnSegmentNumbers();
+			Seg = S.find(p.first);
+			Seg2 = S.find(p.second);
 			
-			S.swapSeg(p.second,p.first);
-			
-			S.returnabovebelow();
-			S.returnSegmentNumbers();
-			system("clear");
-			
-			Seg = S.find(p.second);
-			Seg2 = S.find(p.first);
-			SegA = S.find(Seg2.above);
-			SegB = S.find(Seg.below);
-			
-			I=S.intersect(Seg2,SegA);
-			
-			if (I!=nulo) {
+			if (Seg!=S.end() && Seg2!=S.end()) {
+//				S.swapSeg(p.first,p.second);
 				
-				Inserted=Q1.add(I,Intnumb,Intersections);
+				S.returnSegmentNumbers();
+				cout<<endl;
 				
-				if (Inserted) {
-					pair<int,int> p;
-					p.first = Seg2.edge; 
-					p.second = SegA.edge;
+				Seg = S.find(p.first);
+				Seg2 = S.find(p.second);
+				S.remove(*Seg);
+				S.add(*Seg,E.eV.x[0]+0.02);
+				S.remove(*Seg2);
+				S.add(*Seg2,E.eV.x[0]+0.02);
+				
+				S.returnSegmentNumbers();
+				cout<<endl;
+//				system("clear");
+				
+				
+				SLseg *SegA = *(--Seg2);
+				SLseg *SegB = *(++Seg);
+				Seg2 = S.find(p.second);
+				Seg = S.find(p.first);
+				
+				if (Seg2 != S.begin()) {
+					I = S.intersect(*Seg2,SegA);
 					
-					Map_Intersections[Intnumb]=p;
-					--Intnumb;
-					Intersections.push_back(I);
+					if (I) {
+						
+						Inserted = Q1.add(I,Intnumb,Intersections);
+						
+						if (Inserted) {
+							pair<int,int> p;
+							p.first = SegA->edge;
+							p.second = (*Seg2)->edge;
+							
+							Map_Intersections[Intnumb]=p;
+							--Intnumb;
+							Intersections.push_back(I);
+						}
+					}
 				}
-//				cout<<I->x<<" "<<I->y<<endl;
-			}
-			
-			I=S.intersect(Seg,SegB);
-			
-			if (I!=nulo) {
 				
-				Inserted=Q1.add(I,Intnumb,Intersections);
-				
-				if (Inserted) {
-					pair<int,int> p; 
-					p.first = Seg.edge; 
-					p.second = SegB.edge;
+				++Seg;
+				if (Seg != S.end()) {
+					--Seg;
+					I = S.intersect(*Seg,SegB);
 					
-					Map_Intersections[Intnumb]=p;
-					--Intnumb;
-					
-					Intersections.push_back(I);
+					if (I) {
+						
+						Inserted = Q1.add(I,Intnumb,Intersections);
+						
+						if (Inserted) {
+							pair<int,int> p;
+							//1 y 2 se insertan al reves
+							p.first = (*Seg)->edge;
+							p.second = SegB->edge;
+							
+							Map_Intersections[Intnumb]=p;
+							--Intnumb;
+							
+							Intersections.push_back(I);
+						}
+					}
 				}
-//				cout<<I->x<<" "<<I->y<<endl;
 			}
 		}
+		
+		Q1.remove(E);
 	}
 	
-	list<Point>::iterator it;
+	list<Point*>::iterator it;
 	for(it=Intersections.begin();it!=Intersections.end();it++)
-		cout<<(*it).x[0]<<" "<<(*it).x[1]<<endl;
+		cout<<(*it)->x[0]<<" "<<(*it)->x[1]<<endl;
 	
-	return Intersections;
+//	return Intersections;
 }

@@ -193,12 +193,12 @@ struct DCEL
 	}
 };
 
-int main() 
-{
-	malla m;
-	m.read(_DIR "dcel2.dat");
-	
-	DCEL dcel(m);
-	
-	dcel.show_loop_face(2);
-}
+//int main() 
+//{
+//	malla m;
+//	m.read(_DIR "dcel2.dat");
+//	
+//	DCEL dcel(m);
+//	
+//	dcel.show_loop_face(2);
+//}
