@@ -47,11 +47,13 @@ struct Polygon {
 	Point *V;
 	Polygon() {};
 	Polygon(malla &m) {
-		n = m.n.len/2;
-		V = new Point[m.n.len];
-		for(int i=0;i<m.n.len;i++) {
-			V[i].x[0]=m.n[i].x[0];
-			V[i].x[1]=m.n[i].x[1];
+		n = m.e.len;
+		V = new Point[m.e.len*2];
+		for (int i=0,j=0; i<m.e.len; i++, j+=2) {
+			V[j].x[0]=m.n[m.e[i][0]].x[0];
+			V[j].x[1]=m.n[m.e[i][0]].x[1];
+			V[j+1].x[0]=m.n[m.e[i][1]].x[0];
+			V[j+1].x[1]=m.n[m.e[i][1]].x[1];
 		}
 	}
 };
@@ -155,7 +157,7 @@ public:
 EventQueue::EventQueue(Polygon P)
 {
 	ix = 0;
-	ne = 2*P.n; // 2 vertex events for each edge
+	ne = P.n; // 2 vertex events for each edge
 	
 	// Initialize event queue with edge segment endpoints
 	for (int i=0,j=0; i < P.n; i++, j+=2) {        // init data for edge i
@@ -260,7 +262,7 @@ public:
 	void returnSegmentNumbers() {
 		set<SLseg*>::iterator it;
 		for(it=Tree.begin();it!=Tree.end();it++)
-			cout<<(*it)->edge<<" "<<(*it)->lP.x[0]<<" "<<(*it)->lP.x[1]<<" "<<(*it)->rP.x[0]<<" "<<(*it)->rP.x[1]<<endl;
+			cout<<(*it)->edge<<" "<<(*it)->lP.x[0]<<" "<<(*it)->lP.x[1]<<" "<<(*it)->rP.x[0]<<" "<<(*it)->rP.x[1]<<" "<<(*it)->val<<endl;
 	};
 	
 //	void returnabovebelow() {
@@ -327,8 +329,15 @@ set_iterator SweepLine::add(Event E)
 		s->lP = v2;
 	}
 	
+	//Trucheada máxima: 
+	//Para que la dcel no me joda con los segmentos que se intersectan solo en
+	//un vértice,los "acorto" cosa de que me guarde segmentos que no estan
+	//unidos (Que trucazo no?)
+	s->lP = s->lP*0.99999 + s->rP*0.00001;
+	s->rP = s->lP*0.00001 + s->rP*0.99999;
+	s->val = s->function(s->lP.x[0]);
 	
-	s->val = s->function(E.eV.x[0]);
+	
 	// add a node to the balanced binary tree
 	pair<set<SLseg*>::iterator,bool> nd;
 	nd = Tree.insert(s);
@@ -387,7 +396,7 @@ bool SweepLine::remove(SLseg *s)
 	nd = Tree.find(s);
 	
 	if (nd == Tree.end())
-		return false; // not theTania Heffnerre
+		return false; // not there
 	
 	Tree.erase(nd); // remove it
 	return true;
@@ -467,7 +476,7 @@ Point* SweepLine::intersect(SLseg *s1, SLseg *s2)
 //list<Point> Return_Intersections() {
 int main() {
 	malla m;
-	m.read(_DIR "segint5.dat"); //Leo la malla de entrada
+	m.read(_DIR "dcel12.dat"); //Leo la malla de entrada
 	
 	Polygon P(m);          //Construyo el poligono simple
 	EventQueue Q1(P);      //Construyo la cola de eventos //Todos los endpoints ordenados x-creciente
@@ -500,7 +509,7 @@ int main() {
 			S.returnSegmentNumbers();
 			system("clear");
 			
-			if (Seg != S.begin()) {
+			if (*Seg && Seg != S.begin()) {
 				SLseg *SegA = *(--Seg);
 				Seg++; //incremento porque decremente antes, para que quede en la posicion orginal
 				I = S.intersect(*Seg,SegA);
