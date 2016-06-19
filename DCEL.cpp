@@ -7,30 +7,30 @@
 
 using namespace std;
 
-void vertex::add_edge_to_list(half_edge *_he) 
+void Point::add_edge_to_list(half_edge *_he) 
 {
 	rep.push_back(_he);
 }
 
-vertex *center_t;
+Point *center_t;
 
 bool less_he(half_edge *a_he, half_edge *b_he)
 {
-	vertex *a = a_he->twin->tail;
-	vertex *b = b_he->twin->tail;
+	Point *a = a_he->twin->tail;
+	Point *b = b_he->twin->tail;
 	
-	if (a->x - center_t->x >= 0 && b->x - center_t->x < 0)
+	if (a->x[0] - center_t->x[0] >= 0 && b->x[0] - center_t->x[0] < 0)
 		return true;
-	if (a->x - center_t->x < 0 && b->x - center_t->x >= 0)
+	if (a->x[0] - center_t->x[0] < 0 && b->x[0] - center_t->x[0] >= 0)
 		return false;
-	if (a->x - center_t->x == 0 && b->x - center_t->x == 0) {
-		if (a->y - center_t->y >= 0 || b->y - center_t->y >= 0)
-			return a->y > b->y;
-		return b->y > a->y;
+	if (a->x[0] - center_t->x[0] == 0 && b->x[0] - center_t->x[0] == 0) {
+		if (a->x[1] - center_t->x[1] >= 0 || b->x[1] - center_t->x[1] >= 0)
+			return a->x[1] > b->x[1];
+		return b->x[1] > a->x[1];
 	}
 	
 	// compute the cross product of vectors (center_t -> a) x (center_t -> b)
-	int det = (a->x - center_t->x) * (b->y - center_t->y) - (b->x - center_t->x) * (a->y - center_t->y);
+	int det = (a->x[0] - center_t->x[0]) * (b->x[1] - center_t->x[1]) - (b->x[0] - center_t->x[0]) * (a->x[1] - center_t->x[1]);
 	if (det < 0)
 		return true;
 	if (det > 0)
@@ -38,8 +38,8 @@ bool less_he(half_edge *a_he, half_edge *b_he)
 	
 	// points a and b are on the same line from the center_t
 	// check which point is closer to the center_t
-	int d1 = (a->x - center_t->x) * (a->x - center_t->x) + (a->y - center_t->y) * (a->y - center_t->y);
-	int d2 = (b->x - center_t->x) * (b->x - center_t->x) + (b->y - center_t->y) * (b->y - center_t->y);
+	int d1 = (a->x[0] - center_t->x[0]) * (a->x[0] - center_t->x[0]) + (a->x[1] - center_t->x[1]) * (a->x[1] - center_t->x[1]);
+	int d2 = (b->x[0] - center_t->x[0]) * (b->x[0] - center_t->x[0]) + (b->x[1] - center_t->x[1]) * (b->x[1] - center_t->x[1]);
 	return d1 > d2;
 }
 
@@ -49,9 +49,9 @@ DCEL::DCEL(malla &m)
 	int cant_edges = m.e.len/*-1*/;
 	
 	for(int i=0;i<cant_vertex;i++) {
-		vertex *vn = new vertex;
-		vn->x=m.n[i].x[0];
-		vn->y=m.n[i].x[1];
+		Point *vn = new Point;
+		vn->x[0]=m.n[i].x[0];
+		vn->x[1]=m.n[i].x[1];
 		v.push_back(vn);
 	}
 	
@@ -84,7 +84,7 @@ DCEL::DCEL(malla &m)
 	//setear los next y prevs
 	for(int i=0;i<cant_vertex;i++) { 
 		vector<half_edge*> &rep = v[i]->rep;
-		for(int j=0;j<rep.size()-1;j++) {
+		for(size_t j=0;j<rep.size()-1;j++) {
 			rep[j]->twin->next = rep[j+1];
 			rep[j+1]->prev = rep[j]->twin;
 		}
@@ -93,7 +93,7 @@ DCEL::DCEL(malla &m)
 	}
 	
 	//"armar" las caras, buscando los loops para todos los half_edge
-	int i=0,j;
+	size_t i=0,j;
 	bool hay_para_procesar = true;
 	half_edge *e = he[0]; //agarro la primera para empezar
 	while (hay_para_procesar) {
@@ -123,23 +123,23 @@ void DCEL::show_half_edges()
 {
 	vector<half_edge*>::iterator it;
 	for (it=he.begin();it!=he.end();it++) {
-		cout<<(*it)->index<<" "<<(*it)->tail->x<<" "<<(*it)->tail->y<<endl;
+		cout<<(*it)->index<<" "<<(*it)->tail->x[0]<<" "<<(*it)->tail->x[1]<<endl;
 	}
 }
 
 void DCEL::show_vertex_incident_edge()
 {
-	vector<vertex*>::iterator it;
+	vector<Point*>::iterator it;
 	for (it=v.begin();it!=v.end();it++) {
-		cout<<(*it)->x<<" "<<(*it)->y<<" "<<(*it)->incident_edge->index<<endl;
+		cout<<(*it)->x[0]<<" "<<(*it)->x[1]<<" "<<(*it)->incident_edge->index<<endl;
 	}
 }
 
 void DCEL::show_vertex_rep()
 {
-	vector<vertex*>::iterator it;
+	vector<Point*>::iterator it;
 	for (it=v.begin();it!=v.end();it++) {
-		cout<<(*it)->x<<" "<<(*it)->y<<" ";
+		cout<<(*it)->x[0]<<" "<<(*it)->x[1]<<" ";
 		vector<half_edge*>::iterator it2;
 		for (it2=(*it)->rep.begin();it2!=(*it)->rep.end();it2++) {
 			cout<<(*it2)->index<<" ";
@@ -163,16 +163,6 @@ void DCEL::show_loop_face(int face_comienzo)
 {
 	vector<half_edge*>::iterator it;
 	for (it=f[face_comienzo]->rep.begin();it!=f[face_comienzo]->rep.end();it++) {
-		cout<<(*it)->index<<" "<<(*it)->tail->x<<" "<<(*it)->tail->y<<endl;
+		cout<<(*it)->index<<" "<<(*it)->tail->x[0]<<" "<<(*it)->tail->x[1]<<endl;
 	}
 }
-
-//int main() 
-//{
-//	malla m;
-//	m.read(_DIR "dcel12.dat");
-//	
-//	DCEL dcel(m);
-//	
-//	dcel.show_loop_face(1);
-//}
