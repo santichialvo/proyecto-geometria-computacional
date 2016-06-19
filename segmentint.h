@@ -7,7 +7,7 @@
 
 using namespace std;
 
-struct Polygon 
+struct Polygon
 {
 	int n;
 	Point *V;
@@ -29,7 +29,7 @@ struct Polygon
 int xyorder(Point p1, Point p2);
 
 // Clase EventQueue 
-struct Event 
+struct Event
 {
 	int edge;  // el edge va de V[i] a V[i+1]
 	int type;  // LEFT o RIGHT
@@ -59,29 +59,6 @@ public:
 	bool add(Point *P,int Intnumb,list<Point*> Inters);
 	void remove(Event E);
 	void showevents();
-};
-
-//=============================================================================
-
-struct SLseg 
-{
-	int   edge;        // polygon edge i is V[i] to V[i+1]
-	Point lP;          // leftmost vertex point
-	Point rP;          // rightmost vertex point
-	mutable double val;// valor de la función en la posicion de la sweepline
-	
-	bool operator!=(const SLseg &S2) const {
-		return (edge != S2.edge);
-	}
-	
-	bool operator==(const SLseg &S2) const {
-		return (edge == S2.edge);
-	}
-	
-	double function(double x) 
-	{
-		return ((rP.x[1]-lP.x[1])/(rP.x[0]-lP.x[0]))*(x-lP.x[0]) + lP.x[1];
-	}
 };
 
 //=============================================================================

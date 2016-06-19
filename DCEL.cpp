@@ -7,14 +7,14 @@
 
 using namespace std;
 
-void Point::add_edge_to_list(half_edge *_he) 
+void Point::add_edge_to_list(SLseg *_he) 
 {
 	rep.push_back(_he);
 }
 
 Point *center_t;
 
-bool less_he(half_edge *a_he, half_edge *b_he)
+bool less_he(SLseg *a_he, SLseg *b_he)
 {
 	Point *a = a_he->twin->tail;
 	Point *b = b_he->twin->tail;
@@ -56,14 +56,14 @@ DCEL::DCEL(malla &m)
 	}
 	
 	for(int i=0;i<cant_edges;i++) {
-		half_edge *he1 = new half_edge;
-		half_edge *he2 = new half_edge;
+		SLseg *he1 = new SLseg;
+		SLseg *he2 = new SLseg;
 		he1->tail = v[m.e[i].n[0]];
 		he2->tail = v[m.e[i].n[1]];
 		he1->twin = he2;
 		he2->twin = he1;
-		he1->index = i;
-		he2->index = i+cant_edges; //Correspondencia entre twins 0->n_edges,1->n_edges+1,etc
+		he1->edge = i;
+		he2->edge = i+cant_edges; //Correspondencia entre twins 0->n_edges,1->n_edges+1,etc
 		
 		he.push_back(he1);
 		he.push_back(he2);
@@ -83,7 +83,7 @@ DCEL::DCEL(malla &m)
 	
 	//setear los next y prevs
 	for(int i=0;i<cant_vertex;i++) { 
-		vector<half_edge*> &rep = v[i]->rep;
+		vector<SLseg*> &rep = v[i]->rep;
 		for(size_t j=0;j<rep.size()-1;j++) {
 			rep[j]->twin->next = rep[j+1];
 			rep[j+1]->prev = rep[j]->twin;
@@ -95,14 +95,14 @@ DCEL::DCEL(malla &m)
 	//"armar" las caras, buscando los loops para todos los half_edge
 	size_t i=0,j;
 	bool hay_para_procesar = true;
-	half_edge *e = he[0]; //agarro la primera para empezar
+	SLseg *e = he[0]; //agarro la primera para empezar
 	while (hay_para_procesar) {
 		
 		face *fn = new face;
 		fn->index = i++;
 		e->incident_face = fn;
 		fn->rep.push_back(e);
-		half_edge *enext = e->next;
+		SLseg *enext = e->next;
 		while (e != enext) {
 			enext->incident_face = fn;
 			fn->rep.push_back(enext);
@@ -121,9 +121,9 @@ DCEL::DCEL(malla &m)
 }
 void DCEL::show_half_edges()
 {
-	vector<half_edge*>::iterator it;
+	vector<SLseg*>::iterator it;
 	for (it=he.begin();it!=he.end();it++) {
-		cout<<(*it)->index<<" "<<(*it)->tail->x[0]<<" "<<(*it)->tail->x[1]<<endl;
+		cout<<(*it)->edge<<" "<<(*it)->tail->x[0]<<" "<<(*it)->tail->x[1]<<endl;
 	}
 }
 
@@ -131,7 +131,7 @@ void DCEL::show_vertex_incident_edge()
 {
 	vector<Point*>::iterator it;
 	for (it=v.begin();it!=v.end();it++) {
-		cout<<(*it)->x[0]<<" "<<(*it)->x[1]<<" "<<(*it)->incident_edge->index<<endl;
+		cout<<(*it)->x[0]<<" "<<(*it)->x[1]<<" "<<(*it)->incident_edge->edge<<endl;
 	}
 }
 
@@ -140,9 +140,9 @@ void DCEL::show_vertex_rep()
 	vector<Point*>::iterator it;
 	for (it=v.begin();it!=v.end();it++) {
 		cout<<(*it)->x[0]<<" "<<(*it)->x[1]<<" ";
-		vector<half_edge*>::iterator it2;
+		vector<SLseg*>::iterator it2;
 		for (it2=(*it)->rep.begin();it2!=(*it)->rep.end();it2++) {
-			cout<<(*it2)->index<<" ";
+			cout<<(*it2)->edge<<" ";
 		}
 		cout<<endl;
 	}
@@ -150,19 +150,19 @@ void DCEL::show_vertex_rep()
 
 void DCEL::show_loop_edge(int edge_comienzo, bool clockwise)
 {
-	half_edge *e = he[edge_comienzo];
-	half_edge *enext = e->next;
-	cout<<e->index<<" ";
+	SLseg *e = he[edge_comienzo];
+	SLseg *enext = e->next;
+	cout<<e->edge<<" ";
 	while (e != enext) {
-		cout<<enext->index<<" ";
+		cout<<enext->edge<<" ";
 		enext = enext->next;
 	}
 }
 
 void DCEL::show_loop_face(int face_comienzo)
 {
-	vector<half_edge*>::iterator it;
+	vector<SLseg*>::iterator it;
 	for (it=f[face_comienzo]->rep.begin();it!=f[face_comienzo]->rep.end();it++) {
-		cout<<(*it)->index<<" "<<(*it)->tail->x[0]<<" "<<(*it)->tail->x[1]<<endl;
+		cout<<(*it)->edge<<" "<<(*it)->tail->x[0]<<" "<<(*it)->tail->x[1]<<endl;
 	}
 }

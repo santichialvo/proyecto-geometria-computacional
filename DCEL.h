@@ -5,7 +5,7 @@
 
 using namespace std;
 
-struct half_edge;
+struct SLseg;
 
 struct Point
 {
@@ -17,9 +17,9 @@ struct Point
 	}
 	//Esto es para DCEL
 	//=========================================================================
-	half_edge *incident_edge;
-	vector<half_edge*> rep;	
-	void add_edge_to_list(half_edge *_he);
+	SLseg *incident_edge;
+	vector<SLseg*> rep;	
+	void add_edge_to_list(SLseg *_he);
 	//Esto es para segmentint
 	//=========================================================================
 	bool operator<(const Point &P2) const {
@@ -55,24 +55,48 @@ struct Point
 struct face
 {
 	int index;
-	vector<half_edge*> rep;
+	vector<SLseg*> rep;
 };
 
-struct half_edge
+struct SLseg
 {
-	int index;
-	half_edge *prev;  /* prev->next == this */
-	half_edge *next;  /* next->prev == this */
-	half_edge *twin;  /* twin->twin == this */
-	Point *tail;     /* twin->next->tail == tail && prev->twin->tail == tail */
+	int edge;          // polygon edge i is V[i] to V[i+1]
+	
+	//Esto es para DCEL
+	//=========================================================================
+	SLseg *prev;
+	SLseg *next;
+	SLseg *twin;
+	Point *tail;
 	face *incident_face;
+	
+	//Esto es para segmentint
+	//=========================================================================
+	Point lP;          // leftmost vertex point
+	Point rP;          // rightmost vertex point
+	mutable double val;// valor de la función en la posicion de la sweepline
+	
+	bool operator!=(const SLseg &S2) const 
+	{
+		return (edge != S2.edge);
+	}
+	
+	bool operator==(const SLseg &S2) const 
+	{
+		return (edge == S2.edge);
+	}
+	
+	double function(double x) 
+	{
+		return ((rP.x[1]-lP.x[1])/(rP.x[0]-lP.x[0]))*(x-lP.x[0]) + lP.x[1];
+	}
 };
 
 struct DCEL
 {
 	vector<Point*> v;
 	vector<face*> f;
-	vector<half_edge*> he;
+	vector<SLseg*> he;
 	
 	DCEL() {}
 	DCEL(malla &m);
