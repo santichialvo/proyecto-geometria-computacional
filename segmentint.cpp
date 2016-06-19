@@ -1,6 +1,7 @@
 #include <iostream>
 #include <set>
 #include "malla.h"
+#include "DCEL.h"
 #include <cstddef>
 #include <list>
 #include <map>
@@ -42,6 +43,7 @@ struct Point {
 		return a;
 	}
 };
+
 struct Polygon {
 	int n;
 	Point *V;
@@ -473,15 +475,20 @@ Point* SweepLine::intersect(SLseg *s1, SLseg *s2)
 //}
 ////===================================================================
 
-//list<Point> Return_Intersections() {
+//list<Point*> Return_Intersections() {
 int main() {
 	malla m;
-	m.read(_DIR "dcel12.dat"); //Leo la malla de entrada
+	m.read(_DIR "dcel1.dat"); //Leo la malla de entrada
+	
+	DCEL dcel(m);
+	dcel.show_loop_face(2);
+	cout<<endl;
 	
 	Polygon P(m);          //Construyo el poligono simple
 	EventQueue Q1(P);      //Construyo la cola de eventos //Todos los endpoints ordenados x-creciente
 	SweepLine S(P);        //Construyo la SweepLine
 	
+	//Variables varias
 	Event E;
 	Point nulo(0,0);
 	set_iterator Seg,Seg2,SegA,SegB;
@@ -490,14 +497,15 @@ int main() {
 	list<Point*> Intersections;
 	map<int,pair<int,int>> Map_Intersections;
 	int Intnumb=-2;
-	Q1.showevents();
-	system("clear");
+//	Q1.showevents();
+//	system("clear");
+	
 	while (Q1.size()!=0) {
 		
 		E = Q1.next();
 //		if (E.edge==-1) break;
-		Q1.showevents();
-		system("clear");
+//		Q1.showevents();
+//		system("clear");
 		
 		if (E.type==LEFT) {
 			
@@ -505,9 +513,9 @@ int main() {
 			S.actualizarvals(E.eV.x[0]);
 			Seg = S.add(E);     //Agrego el segmento a la SweepLine
 
-			cout<<endl;
-			S.returnSegmentNumbers();
-			system("clear");
+//			cout<<endl;
+//			S.returnSegmentNumbers();
+//			system("clear");
 			
 			if (*Seg && Seg != S.begin()) {
 				SLseg *SegA = *(--Seg);
@@ -532,7 +540,7 @@ int main() {
 			Seg++;
 			if (Seg != S.end()) {
 				SLseg *SegB = *Seg;
-				Seg--; //decremento porque decremente antes, para que quede en la posicion orginal
+				Seg--; //decremento porque incremente antes, para que quede en la posicion orginal
 				I = S.intersect(*Seg,SegB);
 				
 				if (I) {
@@ -560,16 +568,16 @@ int main() {
 			--Seg;
 			
 			Seg = S.find(E);
-			S.returnSegmentNumbers();
+//			S.returnSegmentNumbers();
 			bool checkintersection = Seg!=S.begin();
 			checkintersection &= (++Seg)!=S.end();
 			
 			Seg = S.find(E);
 			S.remove(*Seg);
 			
-			cout<<endl;
-			S.returnSegmentNumbers();
-			system("clear");
+//			cout<<endl;
+//			S.returnSegmentNumbers();
+//			system("clear");
 			if (checkintersection) {
 				
 				I=S.intersect(SegA,SegB);
@@ -599,8 +607,8 @@ int main() {
 			if (Seg!=S.end() && Seg2!=S.end()) {
 //				S.swapSeg(p.first,p.second);
 				
-				S.returnSegmentNumbers();
-				cout<<endl;
+//				S.returnSegmentNumbers();
+//				cout<<endl;
 				
 				Seg = S.find(p.first);
 				Seg2 = S.find(p.second);
@@ -609,8 +617,8 @@ int main() {
 				S.remove(*Seg2);
 				S.add(*Seg2,E.eV.x[0]+0.02);
 				
-				S.returnSegmentNumbers();
-				cout<<endl;
+//				S.returnSegmentNumbers();
+//				cout<<endl;
 //				system("clear");
 				
 				
