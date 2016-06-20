@@ -26,17 +26,18 @@ struct Polygon
 
 //=============================================================================
 
-int xyorder(Point p1, Point p2);
+int xyorder(Point *p1, Point *p2);
 
 // Clase EventQueue 
 struct Event
 {
-	int edge;  // el edge va de V[i] a V[i+1]
-	int type;  // LEFT o RIGHT
-	Point eV;  // event vertex
+	int seg_index;  // el edge va de V[i] a V[i+1]
+	int type;       // LEFT o RIGHT
+	Point *eV;      // event vertex
+	SLseg *Seg;
 	
 	bool operator==(const Event &E2) const {
-		return (edge==E2.edge && type==E2.type);
+		return (seg_index==E2.seg_index && type==E2.type);
 	}
 	
 	bool operator<(const Event &E2) const {
@@ -48,11 +49,11 @@ struct Event
 
 class EventQueue 
 {
-	int ne;        //total number of events in array
+	int cant_aristas;
 	int ix;        //index of next event on queue
 	set<Event> Eq; //array of all events
 public:
-	EventQueue(Polygon P);     //constructor
+	EventQueue(DCEL &P);     //constructor
 	
 	Event next(); // next event on queue
 	int size();
@@ -80,7 +81,7 @@ public:
 	SweepLine(Polygon P)               // constructor
 	{ nv = P.n*2; Pn = P; }
 	
-	set_iterator add(Event);
+	set_iterator add(Event &E);
 	set_iterator add(SLseg*,double);
 	set_iterator find(Event);
 	set_iterator find(int);
@@ -91,7 +92,6 @@ public:
 	set_iterator begin() { return Tree.begin(); }
 	set_iterator end() { return Tree.end(); }
 	void returnSegmentNumbers();
-//	list<Point*> Return_Intersections(malla &m);
 };
 
 list<Point*> Return_Intersections(malla &m);

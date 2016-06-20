@@ -60,10 +60,10 @@ struct face
 
 struct SLseg
 {
-	int edge;          // polygon edge i is V[i] to V[i+1]
 	
 	//Esto es para DCEL
 	//=========================================================================
+	int edge; //Indice del edge/segmento
 	SLseg *prev;
 	SLseg *next;
 	SLseg *twin;
@@ -72,8 +72,9 @@ struct SLseg
 	
 	//Esto es para segmentint
 	//=========================================================================
-	Point lP;          // leftmost vertex point
-	Point rP;          // rightmost vertex point
+	int seg_index;           //Indice del edge/segmento
+	Point *lP;          // leftmost vertex point
+	Point *rP;          // rightmost vertex point
 	mutable double val;// valor de la función en la posicion de la sweepline
 	
 	bool operator!=(const SLseg &S2) const 
@@ -88,7 +89,7 @@ struct SLseg
 	
 	double function(double x) 
 	{
-		return ((rP.x[1]-lP.x[1])/(rP.x[0]-lP.x[0]))*(x-lP.x[0]) + lP.x[1];
+		return ((rP->x[1]-lP->x[1])/(rP->x[0]-lP->x[0]))*(x-lP->x[0]) + lP->x[1];
 	}
 };
 
