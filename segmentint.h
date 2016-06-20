@@ -7,25 +7,6 @@
 
 using namespace std;
 
-struct Polygon
-{
-	int n;
-	Point *V;
-	Polygon() {};
-	Polygon(malla &m) {
-		n = m.e.len;
-		V = new Point[m.e.len*2];
-		for (int i=0,j=0; i<m.e.len; i++, j+=2) {
-			V[j].x[0]=m.n[m.e[i][0]].x[0];
-			V[j].x[1]=m.n[m.e[i][0]].x[1];
-			V[j+1].x[0]=m.n[m.e[i][1]].x[0];
-			V[j+1].x[1]=m.n[m.e[i][1]].x[1];
-		}
-	}
-};
-
-//=============================================================================
-
 int xyorder(Point *p1, Point *p2);
 
 // Clase EventQueue 
@@ -74,12 +55,9 @@ struct set_comparador
 };
 
 class SweepLine {
-	int     nv;                        // number of vertices in polygon
-	Polygon Pn;                        // initial Polygon
 	set<SLseg*,set_comparador> Tree;   // utilizo set
 public:
-	SweepLine(Polygon P)               // constructor
-	{ nv = P.n*2; Pn = P; }
+	SweepLine() {}               // constructor
 	
 	set_iterator add(Event &E);
 	set_iterator add(SLseg*,double);
@@ -97,7 +75,4 @@ public:
 list<Point*> Return_Intersections(malla &m);
 
 //=============================================================================
-
-
-
 #endif

@@ -318,9 +318,8 @@ list<Point*> Return_Intersections(malla &m) {
 	
 	DCEL dcel(m);
 	
-	Polygon P(m);          //Construyo el poligono simple
 	EventQueue Q1(dcel);      //Construyo la cola de eventos //Todos los endpoints ordenados x-creciente
-	SweepLine S(P);        //Construyo la SweepLine
+	SweepLine S;              //Construyo la SweepLine
 	
 	//Variables varias
 	Event E;
